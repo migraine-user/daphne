@@ -1,0 +1,8 @@
+// One element-wise op, no aggregation. The IR has a single ewAbs that lowers to
+// one kernel call. Nothing to fuse here -- this is the baseline.
+//
+//   daphne --explain parsing --explain kernels 01_ew_only.daph
+
+X = fill(-3.0, 4, 4);
+Y = abs(X);
+print(Y);

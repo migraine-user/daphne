@@ -168,6 +168,9 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module) {
     if (userConfig_.explain_columnar)
         pm.addPass(mlir::daphne::createPrintIRPass("IR after lowering to columnar ops:"));
 
+    // Note on each producer which stats its consumers need, so the producer can compute them in one pass.
+    pm.addNestedPass<mlir::func::FuncOp>(mlir::daphne::createCharacteristicRequestPass());
+
     if (selectMatrixRepresentations_) {
         pm.addNestedPass<mlir::func::FuncOp>(mlir::daphne::createSelectMatrixRepresentationsPass(userConfig_));
         pm.addNestedPass<mlir::func::FuncOp>(mlir::createCanonicalizerPass());
@@ -237,6 +240,9 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module) {
 
     if (userConfig_.use_mlir_codegen || userConfig_.use_mlir_hybrid_codegen)
         buildCodegenPipeline(pm);
+
+    // Commit the requested stats to each producer right before we pick kernels, so the kernel choice can honor them.
+    pm.addNestedPass<mlir::func::FuncOp>(mlir::daphne::createFuseCharacteristicsPass());
 
     pm.addNestedPass<mlir::func::FuncOp>(mlir::daphne::createRewriteToCallKernelOpPass(userConfig_, usedLibPaths));
     if (userConfig_.explain_kernels)

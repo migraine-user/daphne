@@ -77,4 +77,12 @@ def TransferDataPropertiesPass: Pass<"transfer-data-props", "::mlir::func::FuncO
     let constructor = "mlir::daphne::createTransferDataPropertiesPass()";
 }
 
+def CharacteristicRequestPass : Pass<"request-characteristics", "::mlir::func::FuncOp"> {
+    let constructor = "mlir::daphne::createCharacteristicRequestPass()";
+}
+
+def FuseCharacteristicsPass : Pass<"fuse-characteristics", "::mlir::func::FuncOp"> {
+    let constructor = "mlir::daphne::createFuseCharacteristicsPass()";
+}
+
 #endif // SRC_IR_DAPHNEIR_PASSES_TD

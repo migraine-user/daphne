@@ -1,0 +1,12 @@
+// The interesting case: an element-wise op feeding three aggregations. Right now
+// abs runs over the matrix once, then min, max and mean each scan the result
+// again -- four passes in total. The fusion work computes all three stats while
+// abs is already touching every element, so it becomes one pass instead of four.
+//
+//   daphne --explain property_inference --explain kernels 03_fusion_target.daph
+
+X = fill(-5.0, 8, 8);
+Y = abs(X);
+print(aggMin(Y));
+print(aggMax(Y));
+print(mean(Y));

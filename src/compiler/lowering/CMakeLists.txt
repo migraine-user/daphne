@@ -29,6 +29,7 @@ add_mlir_dialect_library(MLIRDaphneTransforms
     VectorizeComputationsPass.cpp
     HorizontalFusionPass.cpp
     DaphneOptPass.cpp
+    FuseCharacteristicsPass.cpp
 
     DEPENDS
     MLIRDaphneOpsIncGen

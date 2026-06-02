@@ -14,6 +14,7 @@
 
 add_mlir_dialect_library(MLIRDaphneInference
     AdaptTypesToKernelsPass.cpp
+    CharacteristicRequestPass.cpp
     InferencePass.cpp
     SelectMatrixRepresentationsPass.cpp
     TransferDataPropertiesPass.cpp

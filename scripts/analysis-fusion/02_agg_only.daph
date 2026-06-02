@@ -1,0 +1,9 @@
+// Three whole-matrix aggregations on the same input, no element-wise op. Each one
+// lowers to its own kernel call, so the data gets scanned three times.
+//
+//   daphne --explain parsing --explain kernels 02_agg_only.daph
+
+X = fill(2.0, 4, 4);
+print(aggMin(X));
+print(aggMax(X));
+print(mean(X));

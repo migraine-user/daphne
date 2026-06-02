@@ -42,10 +42,12 @@ struct InferenceConfig {
 
 // alphabetically sorted list of passes
 std::unique_ptr<Pass> createAdaptTypesToKernelsPass();
+std::unique_ptr<Pass> createCharacteristicRequestPass();
 std::unique_ptr<Pass> createConvertDaphneToLinalgPass();
 std::unique_ptr<Pass> createDaphneOptPass();
 std::unique_ptr<Pass> createDistributeComputationsPass();
 std::unique_ptr<Pass> createDistributePipelinesPass();
+std::unique_ptr<Pass> createFuseCharacteristicsPass();
 std::unique_ptr<Pass> createInferencePass(InferenceConfig cfg = {false, true, true, true, true, true});
 std::unique_ptr<Pass> createRecordPropertiesPass();
 std::unique_ptr<OperationPass<func::FuncOp>> createInsertPropertiesPass(std::string properties_file_path = "");

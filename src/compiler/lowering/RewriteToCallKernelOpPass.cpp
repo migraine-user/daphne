@@ -48,6 +48,23 @@ using namespace mlir;
 using namespace mlir::affine;
 
 namespace {
+
+// Pack the stat ids in a chars_compute attribute into a bitmask, where bit i set means "stat i
+// wanted" (1 << id). chars_compute holds one id-list per result; the producers we fuse have a
+// single result, so we read entry 0.
+static uint32_t charsComputeToMask(mlir::ArrayAttr chars) {
+    if (!chars || chars.empty())
+        return 0;
+    auto first = llvm::dyn_cast<mlir::ArrayAttr>(chars[0]);
+    if (!first)
+        return 0;
+    uint32_t mask = 0;
+    for (mlir::Attribute a : first)
+        if (auto id = llvm::dyn_cast<mlir::IntegerAttr>(a))
+            mask |= 1u << static_cast<uint32_t>(id.getInt());
+    return mask;
+}
+
 class KernelReplacement : public RewritePattern {
     // TODO This method is only required since MLIR does not seem to
     // provide a means to get this information.
@@ -413,6 +430,21 @@ class KernelReplacement : public RewritePattern {
                 backend = "FPGAOPENCL";
             else
                 backend = "CPP";
+
+            // If the fuse pass tagged this op with stats to compute, try to route to the fused kernel
+            // (the entry that takes a trailing ui32 mask). Only divert if such a kernel actually
+            // exists; otherwise leave the call untouched and fall back to the normal kernel.
+            if (auto chars = op->getAttrOfType<mlir::ArrayAttr>("chars_compute"); chars && !chars.empty()) {
+                Type ui32Ty = rewriter.getIntegerType(32, false);
+                std::vector<mlir::Type> fusedArgTys = lookupArgTys;
+                fusedArgTys.push_back(KernelCatalog::normalizeTypeForKernelLookup(ui32Ty, false));
+                if (kc.findKernel(opMnemonic, fusedArgTys, lookupResTys, backend)) {
+                    Value maskVal = rewriter.create<daphne::ConstantOp>(
+                        loc, ui32Ty, rewriter.getIntegerAttr(ui32Ty, charsComputeToMask(chars)));
+                    kernelArgs.push_back(maskVal);
+                    lookupArgTys = std::move(fusedArgTys);
+                }
+            }
 
             auto kernelOpt = kc.findKernel(opMnemonic, lookupArgTys, lookupResTys, backend);
             if (!kernelOpt) {

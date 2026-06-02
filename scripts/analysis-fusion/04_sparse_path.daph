@@ -1,0 +1,10 @@
+// Same as 03 but on a sparse input, so the compiler picks the CSR representation.
+// Compare --explain select_matrix_repr against the dense case to see the switch.
+//
+//   daphne --explain select_matrix_repr --explain kernels 04_sparse_path.daph
+
+X = rand(64, 64, 0.0, 1.0, 0.01, 42);  // ~1% non-zero, should pick CSR
+Y = sqrt(X);
+print(aggMin(Y));
+print(aggMax(Y));
+print(mean(Y));
