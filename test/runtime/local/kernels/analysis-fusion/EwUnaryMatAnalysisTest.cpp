@@ -21,7 +21,9 @@
 #include <runtime/local/datastructures/Matrix.h>
 #include <runtime/local/kernels/CheckEq.h>
 #include <runtime/local/kernels/CheckEqApprox.h>
+#include <runtime/local/kernels/analysis-fusion/EwUnaryMatAnalAcc.h>
 #include <runtime/local/kernels/analysis-fusion/EwUnaryMatAnalysis.h>
+#include <runtime/local/kernels/analysis-fusion/NaiveAnalysis.h>
 
 #include <tags.h>
 
@@ -75,7 +77,6 @@ void checkEwUnaryMatAnalOnly(UnaryOpCode opCode, const DT *arg, const DT *exp) {
 
 TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("abs with no result analysis: "), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
     using DT = TestType;
-
     auto arg = genGivenVals<DT>(3, {
                                        0,
                                        1,
@@ -89,6 +90,7 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("abs with no result analysis: "), TAG_KERNE
                                    });
 
     checkEwUnaryMatAnal(UnaryOpCode::ABS, arg, exp);
+    naiveAnalysis<DT>(arg, nullptr);
 
     DataObjectFactory::destroy(arg, exp);
 }

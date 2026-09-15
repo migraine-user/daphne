@@ -127,7 +127,7 @@ TEMPLATE_TEST_CASE(TEST_NAME("dense, explicit dims with zeros: mean, min, max, n
     using VT = TestType;
     auto lhs = genGivenVals<DenseMatrix<int64_t>>(4, {0, 1, 0, 2});
     auto rhs = genGivenVals<DenseMatrix<int64_t>>(4, {0, 1, 0, 1});
-    // 4x4 result but coords only fill a corner → many zero cells.
+    // 4x4 result but coords only fill a corner -> many zero cells.
     checkCTableAnalAcc<DenseMatrix, DenseMatrix, VT, int64_t, AnalysisFlag::mean, AnalysisFlag::min, AnalysisFlag::max,
                        AnalysisFlag::numDistinct, AnalysisFlag::sparsity>(lhs, rhs, static_cast<VT>(1), 4, 4);
     DataObjectFactory::destroy(lhs);
@@ -181,6 +181,16 @@ TEMPLATE_TEST_CASE(TEST_NAME("matrix, symmetric table: symmetry, min, numDistinc
     auto rhs = genGivenVals<DenseMatrix<int64_t>>(4, {1, 0, 2, 2});
     checkCTableAnalAcc<Matrix, Matrix, VT, int64_t, AnalysisFlag::symmetry, AnalysisFlag::min,
                        AnalysisFlag::numDistinct>(lhs, rhs, static_cast<VT>(1), 3, 3);
+    DataObjectFactory::destroy(lhs);
+    DataObjectFactory::destroy(rhs);
+}
+
+TEMPLATE_TEST_CASE(TEST_NAME("numDistinctApprox sanity"), TAG_KERNELS, VALUE_TYPES) {
+    using VT = TestType;
+    auto lhs = genGivenVals<DenseMatrix<int64_t>>(4, {0, 1, 2, 2});
+    auto rhs = genGivenVals<DenseMatrix<int64_t>>(4, {1, 0, 2, 2});
+    checkCTableAnalAcc<Matrix, Matrix, VT, int64_t, AnalysisFlag::symmetry, AnalysisFlag::min,
+                       AnalysisFlag::numDistinctApprox>(lhs, rhs, static_cast<VT>(1), 3, 3);
     DataObjectFactory::destroy(lhs);
     DataObjectFactory::destroy(rhs);
 }

@@ -159,3 +159,26 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("round, non-zero maps to zero: mean, min, m
                            AnalysisFlag::sparsity, AnalysisFlag::symmetry>(UnaryOpCode::ROUND, arg);
     DataObjectFactory::destroy(arg);
 }
+
+TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("numDistinctApprox sanity"), TAG_KERNELS, (DenseMatrix), (double)) {
+    using DT = TestType;
+    using VT = typename DT::VT;
+
+    const size_t n = 100;
+    auto arg = DataObjectFactory::create<DT>(n, n, false);
+    VT *v = arg->getValues();
+    for (size_t i = 0; i < n * n; i++)
+        v[i] = static_cast<VT>(i);
+
+    DT *res = nullptr;
+    ewUnaryMatAnalysisAcc<DT, DT, AnalysisFlags<AnalysisFlag::numDistinctApprox>>(UnaryOpCode::ABS, res, arg, nullptr);
+
+    CHECK(res->numDistinct.has_value());
+    double est = static_cast<double>(res->numDistinct.value());
+    double truth = static_cast<double>(n * n);
+
+    CHECK(std::abs(est - truth) / truth < 0.25); // within 25%
+
+    DataObjectFactory::destroy(res);
+    DataObjectFactory::destroy(arg);
+}

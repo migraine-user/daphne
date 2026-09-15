@@ -38,7 +38,6 @@ enum class OutputMatrix { Dense, Sparse, Matrix };
 constexpr size_t KMV_K = 1024;
 
 template <typename VT, AccessPattern AP, OutputMatrix OM, AnalysisFlag... Fs> struct AnalAcc {
-
     // compute the number of elements once
     size_t numElem;
 
@@ -78,6 +77,14 @@ template <typename VT, AccessPattern AP, OutputMatrix OM, AnalysisFlag... Fs> st
                                              std::monostate> symVec{};
     [[no_unique_address]] std::conditional_t<flags::template contains<AnalysisFlag::symmetry>, bool, std::monostate>
         isSymmetric;
+
+    AnalAcc()
+        requires(flags::template contains<AnalysisFlag::numDistinctApprox>)
+        : uBSet(KMV_K) {}
+
+    AnalAcc()
+        requires(!flags::template contains<AnalysisFlag::numDistinctApprox>)
+    = default;
 
     // accumulate order-independent statistics
     // implicit assumption: this function called once with 0 is behaviorally equivalent to calling with 0 multiple
@@ -265,13 +272,13 @@ template <typename VT, AccessPattern AP, OutputMatrix OM, AnalysisFlag... Fs> st
             res->numDistinct = distinct.size();
 
         if constexpr (flags::template contains<AnalysisFlag::numDistinctApprox>) {
-            if (uBSet.size() < uBSet.capacity()) {
-                res->numDistinctApprox = uBSet.size();
+            if (uBSet.size() < KMV_K) {
+                res->numDistinct = uBSet.size();
             } else {
                 size_t kMinVal = uBSet.top();
                 const size_t maxVal = std::numeric_limits<uint32_t>::max();
                 double kMinValNormed = static_cast<double>(kMinVal) / static_cast<double>(maxVal);
-                res->numDistinct = static_cast<size_t>(static_cast<double>(uBSet.capacity() - 1) / kMinValNormed);
+                res->numDistinct = static_cast<size_t>(static_cast<double>(KMV_K - 1) / kMinValNormed);
             }
         }
 

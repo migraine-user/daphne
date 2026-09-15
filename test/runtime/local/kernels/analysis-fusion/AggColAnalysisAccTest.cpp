@@ -249,3 +249,31 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("sum, single column input: mean, min, max, 
                        AnalysisFlag::sparsity, AnalysisFlag::symmetry>(AggOpCode::SUM, arg);
     DataObjectFactory::destroy(arg);
 }
+
+TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("numDistinctApprox sanity"), TAG_KERNELS, (DenseMatrix), (double)) {
+    using DT = TestType;
+    using VT = typename DT::VT;
+
+    const size_t n = 100;
+    auto arg = DataObjectFactory::create<DT>(n, n, false);
+    VT *v = arg->getValues();
+    for (size_t r = 0; r < n; r++)
+        for (size_t c = 0; c < n; c++)
+            v[r * n + c] = static_cast<VT>(c);
+
+    DenseMatrix<VT> *res = nullptr;
+    aggColAnalysisAcc<DenseMatrix<VT>, DT, AnalysisFlags<AnalysisFlag::numDistinctApprox>>(AggOpCode::MEAN, res, arg,
+                                                                                           nullptr);
+    std::unordered_set<VT> distinct;
+    for (size_t r = 0; r < res->getNumRows(); r++)
+        for (size_t c = 0; c < res->getNumCols(); c++)
+            distinct.insert(res->get(r, c));
+    double truth = static_cast<double>(distinct.size());
+
+    CHECK(res->numDistinct.has_value());
+    double est = static_cast<double>(res->numDistinct.value());
+    CHECK(std::abs(est - truth) / truth < 0.25);
+
+    DataObjectFactory::destroy(res);
+    DataObjectFactory::destroy(arg);
+}

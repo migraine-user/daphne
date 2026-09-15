@@ -67,6 +67,13 @@ template <typename VT, OutputMatrix OM, AnalysisFlag... Fs> struct CTableAnalAcc
     [[no_unique_address]] std::conditional_t<flags::template contains<AnalysisFlag::symmetry>, bool, std::monostate>
         isSymmetric;
 
+    CTableAnalAccumulator()
+        requires(flags::template contains<AnalysisFlag::numDistinctApprox>)
+        : uBSet(KMV_K) {}
+    CTableAnalAccumulator()
+        requires(!flags::template contains<AnalysisFlag::numDistinctApprox>)
+    = default;
+
     // accumulate order-independent statistics
     [[gnu::always_inline]] inline void accumulateScalar(VT before, VT weight) {
         // mean is computed by first summing up all values. It is possible to overflow.
@@ -167,6 +174,7 @@ template <typename VT, OutputMatrix OM, AnalysisFlag... Fs> struct CTableAnalAcc
     // Write the result back to the metadata of the resulting matrix
     [[gnu::always_inline]] inline void writeResult(Matrix<VT> *res) {
         // There is no statistics to analyze in an empty matrix
+        const auto KMV_K = 1024;
         const size_t numElem = numRows * numCols;
         if (numElem == 0)
             return;
@@ -274,13 +282,13 @@ template <typename VT, OutputMatrix OM, AnalysisFlag... Fs> struct CTableAnalAcc
         if constexpr (flags::template contains<AnalysisFlag::numDistinct>)
             res->numDistinct = distinct.size();
         if constexpr (flags::template contains<AnalysisFlag::numDistinctApprox>) {
-            if (uBSet.size() < uBSet.capacity()) {
-                res->numDistinctApprox = uBSet.size();
+            if (uBSet.size() < KMV_K) {
+                res->numDistinct = uBSet.size();
             } else {
                 size_t kMinVal = uBSet.top();
                 const size_t maxVal = std::numeric_limits<uint32_t>::max();
                 double kMinValNormed = static_cast<double>(kMinVal) / static_cast<double>(maxVal);
-                res->numDistinct = static_cast<size_t>(static_cast<double>(uBSet.capacity() - 1) / kMinValNormed);
+                res->numDistinct = static_cast<size_t>(static_cast<double>(KMV_K - 1) / kMinValNormed);
             }
         }
         if constexpr (flags::template contains<AnalysisFlag::min>)

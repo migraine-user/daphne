@@ -143,3 +143,31 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("add, non-square(2x3): mean, min, max, numD
     DataObjectFactory::destroy(lhs);
     DataObjectFactory::destroy(rhs);
 }
+
+TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("numDistinctApprox sanity"), TAG_KERNELS, (DenseMatrix), (double)) {
+    using DT = TestType;
+    using VT = typename DT::VT;
+    const size_t n = 100;
+    auto lhs = DataObjectFactory::create<DT>(n, n, false);
+    VT *v = lhs->getValues();
+    for (size_t i = 0; i < n * n; i++)
+        v[i] = static_cast<VT>(i);
+    auto rhs = DataObjectFactory::create<DT>(n, n, false);
+    VT *v2 = lhs->getValues();
+    for (size_t i = 0; i < n * n; i++)
+        v2[i] = static_cast<VT>(i);
+
+    DT *res = nullptr;
+    ewBinaryMatAnalAcc<DT, DT, DT, AnalysisFlags<AnalysisFlag::numDistinctApprox>>(BinaryOpCode::ADD, res, lhs, rhs,
+                                                                                   nullptr);
+
+    CHECK(res->numDistinct.has_value());
+    double est = static_cast<double>(res->numDistinct.value());
+    double truth = static_cast<double>(n * n);
+
+    CHECK(std::abs(est - truth) / truth < 0.25); // within 25%
+
+    DataObjectFactory::destroy(res);
+    DataObjectFactory::destroy(lhs);
+    DataObjectFactory::destroy(rhs);
+}
