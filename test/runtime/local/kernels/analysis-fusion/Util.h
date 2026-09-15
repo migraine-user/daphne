@@ -1,5 +1,5 @@
-#include <catch.hpp>
 #include "runtime/local/kernels/analysis-fusion/AnalysisFlags.h"
+#include <catch.hpp>
 template <typename DT, AnalysisFlag... Fs> void checkAnalysisResult(const DT *arg, const DT *exp) {
     using anal_t = AnalysisFlags<Fs...>;
     if constexpr (anal_t::template contains<AnalysisFlag::mean>) {
@@ -28,4 +28,18 @@ template <typename DT, AnalysisFlag... Fs> void checkAnalysisResult(const DT *ar
         CHECK(arg->numDistinct.has_value() == exp->numDistinct.has_value());
         CHECK(arg->numDistinct.value() == exp->numDistinct.value());
     }
+
+    if constexpr (anal_t::template contains<AnalysisFlag::numDistinctApprox>) {
+        CHECK(arg->numDistinct.has_value() == exp->numDistinct.has_value());
+        const double exp_cnt = static_cast<double>(exp->numDistinct.value());
+        const double arg_cnt = static_cast<double>(arg->numDistinct.value());
+        CHECK(std::abs(exp_cnt - arg_cnt) / exp_cnt < 0.25);
+    }
 }
+
+/*
+    For the `rand()` (RandMatrix kernel) operation, the Daphne compiler uses CSR for sparsities lower than 0.25
+    For testing, we use the same threshold.
+*/
+template <typename VT, double Sparsity>
+using MatrixRepr = std::conditional_t<(Sparsity < 0.25), CSRMatrix<VT>, DenseMatrix<VT>>;
